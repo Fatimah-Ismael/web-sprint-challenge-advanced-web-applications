@@ -1,26 +1,43 @@
 import React, { useEffect } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import PT from 'prop-types'
 
 export default function Articles(props) {
+  const { articles, getArticles, setCurrentArticleId, deleteArticle, updateArticle, currentArticleId, currentArticle, setSpinnerOn} =props;
   // ✨ where are my props? Destructure them here
-
+  const navigate = useNavigate();
   // ✨ implement conditional logic: if no token exists
   // we should render a Navigate to login screen (React Router v.6)
 
   useEffect(() => {
+    if(!localStorage.getItem('token')){
+      navigate(redirectToLogin)
+    } else {
+      getArticles();
+    }
     // ✨ grab the articles here, on first render only
-  })
+  }, [currentArticle])
 
+  const redirectToLogin =()=>{
+    return navigate('/')
+  }
+const handleEditArt = (article_id)=> {
+  setCurrentArticleId(article_id);
+}
+
+const handleDeleteArt = (id)=> {
+  setSpinnerOn(true);
+  deleteArticle(id);
+}
   return (
     // ✨ fix the JSX: replace `Function.prototype` with actual functions
     // and use the articles prop to generate articles
     <div className="articles">
       <h2>Articles</h2>
       {
-        ![].length
+        articles.length === 0
           ? 'No articles yet'
-          : [].map(art => {
+          : articles.map(art => {
             return (
               <div className="article" key={art.article_id}>
                 <div>
@@ -29,8 +46,8 @@ export default function Articles(props) {
                   <p>Topic: {art.topic}</p>
                 </div>
                 <div>
-                  <button disabled={true} onClick={Function.prototype}>Edit</button>
-                  <button disabled={true} onClick={Function.prototype}>Delete</button>
+                  <button disabled={currentArticleId ? true : false} onClick={()=> handleEditArt(art.article_id)}>Edit</button>
+                  <button disabled={currentArticleId ? true: false} onClick= {()=> handleDeleteArt(art.article_id)}>Delete</button>
                 </div>
               </div>
             )

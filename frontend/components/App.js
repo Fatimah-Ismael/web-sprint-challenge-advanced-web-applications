@@ -6,8 +6,8 @@ import Message from './Message'
 import ArticleForm from './ArticleForm'
 import Spinner from './Spinner'
 import { axiosWithAuth } from '../axios'
-
-
+import PrivateRoute from './PrivateRoute'
+import axios from 'axios'
 
 const articlesUrl = 'http://localhost:9000/api/articles'
 const loginUrl = 'http://localhost:9000/api/login'
@@ -27,7 +27,7 @@ export default function App() {
   const logout = () => {
     if(localStorage.getItem('token')) {
       localStorage.removeItem('token');
-      setMessage('goodbye!');
+      setMessage('Goodbye!');
       redirectToLogin();
     }
     // ✨ implement
@@ -37,7 +37,7 @@ export default function App() {
     // using the helper above.
   }
 
-  const login = ({ values }) => {
+  const login = ( values ) => {
     setMessage('');
     setSpinnerOn(true);
     axios.post(loginUrl, values)
@@ -67,8 +67,16 @@ export default function App() {
     axiosWithAuth()
       .get(articlesUrl)
         .then(res=> {
-          console.log(res)
+          setMessage(res.data.message);
+          setArticles(res.data.articles);
+          setSpinnerOn(false);
         })
+          .catch(err => {
+            setMessage('');
+            if(err.res.status === 401) navigate('/');
+            setSpinnerOn(false);
+            console.log(err);
+          })
     // ✨ implement
     // We should flush the message state, turn on the spinner
     // and launch an authenticated request to the proper endpoint.
@@ -80,13 +88,30 @@ export default function App() {
   }
 
   const postArticle = article => {
+    console.log(article);
+    setMessage('');
+    setSpinnerOn(true);
+    axiosWithAuth()
+      .post(articlesUrl, article)
+        .then(res => {
+          //console.log(res)
+          setMessage(res.data.message);
+          setArticles( [...articles, res.data.article]);
+          setSpinnerOn(false);
+        })
+        .catch(err => {
+          setMessage('');
+          if(err.res.status === 401) navigate('/');
+          setSpinnerOn(false);
+          console.log(err);
+        })
     // ✨ implement
     // The flow is very similar to the `getArticles` function.
     // You'll know what to do! Use log statements or breakpoints
     // to inspect the response from the server.
   }
 
-  const updateArticle = ({ article_id, article }) => {
+  const updateArticle = (article) => {
     setMessage('');
     axiosWithAuth()
     .put(`${articlesUrl}/${article.article_id}`, {title: article.title, text: article.text, topic: article.topic})
@@ -110,7 +135,21 @@ export default function App() {
   }
 
   const deleteArticle = article_id => {
-    // ✨ implement
+    setMessage('');
+    axiosWithAuth()
+      .delete(`${articlesUrl}/${article_id}`)
+        .then(res => {
+          console.log(res)
+          setMessage(res.data.message);
+          const filteredArticles = articles.filter(el=> el.article_id !== article_id);
+          setArticles(filteredArticles);
+          setSpinnerOn(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setMessage('');
+          setSpinnerOn(false);
+        })
   }
 
   return (
@@ -127,6 +166,7 @@ export default function App() {
         </nav>
         <Routes>
           <Route path="/" element={<LoginForm login={login}/>} />
+          <Route element={<PrivateRoute />}>
           <Route path="articles" element={
             <>
               <ArticleForm 
@@ -147,6 +187,7 @@ export default function App() {
               />
             </>
           } />
+          </Route>
         </Routes>
         <footer>Bloom Institute of Technology 2022</footer>
       </div>
